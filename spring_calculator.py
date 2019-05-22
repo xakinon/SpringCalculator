@@ -1,7 +1,7 @@
 import sys
 import configparser
 import pathlib
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtCore
 from mainwindow import Ui_MainWindow
 from springCalculate import SpringCalculate
 from model import Model, Delegate
@@ -31,6 +31,14 @@ class MainWindow(QtWidgets.QMainWindow):
             self.model[key].rows = self.inifile.get(key, 'rows').split(',')
             tableView.setModel( self.model[key] )
             tableView.setItemDelegate( Delegate() )
+        
+        # 結果テーブルビューはソートを有効
+        self.proxyModel = QtCore.QSortFilterProxyModel()
+        self.proxyModel.setSourceModel(self.model['result'])
+        self.proxyModel.sort(-1, QtCore.Qt.AscendingOrder)
+        self.proxyModel.setFilterKeyColumn(1)
+        self.ui.tableView_result.setModel(self.proxyModel)
+        self.ui.tableView_result.setSortingEnabled(True)
         
     def conditions(self):
         def drange(begin, end, step):
@@ -75,13 +83,49 @@ class MainWindow(QtWidgets.QMainWindow):
         with open(filename, 'r') as f:
             txt = f.read().splitlines()
         self.model['result'].removeAllItems()
-        self.model['result'].addItems( [ [ s.strip() for s in line.split(',') ] for line in txt[1:] ] )
+        self.model['result'].addItems( [ [ float(s.strip()) for s in line.split(',') ] for line in txt[1:] ] )
 
         self.ui.tabWidget.setCurrentIndex(1)
 
     def calicurateCount(self):
         self.springCalculate.conditions = self.conditions
         self.ui.label.setText( str(0) + '/' + str(self.springCalculate.calicurateCount()))
+        
+    def copyTableData(self, tableView):
+        _str = ''
+        # 最初の行を取得
+        r = tableView.selectedIndexes()[0].row()
+        # モデル取得
+        model = tableView.selectedIndexes()[0].model()
+        if type(model) is QtCore.QSortFilterProxyModel:
+            model = model.sourceModel()
+        # セルを文字列で結合
+        for index in tableView.selectedIndexes():
+            if not r == index.row():
+                # 行が変わったら改行を追加
+                _str = _str[:-1] + '\n'
+                r = index.row()
+            # タブつきでセルの値を文字列に追加
+            _str = _str + str(model.data(index)) + '\t'
+        # クリップボードに文字列をセット
+        QtWidgets.QApplication.clipboard().setText(_str)
+
+    def ctrlC(self):
+        # ctrlCが押されたとき
+        focusWidget = self.ui.centralwidget.focusWidget()
+        if type(focusWidget) is QtWidgets.QTableView:
+            # QTableViewにフォーカスしていればデータをコピー
+            self.copyTableData(focusWidget)
+
+    def keyPressEvent(self, e):
+        if (e.modifiers() & QtCore.Qt.ControlModifier):
+            # Ctrlキーが押されたら
+            if e.key() == QtCore.Qt.Key_C:
+                # cが押されたら
+                self.ctrlC()
+            if e.key() == QtCore.Qt.Key_V:
+                # vが押されたら
+                pass
 
 def main():
     app = QtWidgets.QApplication(sys.argv)

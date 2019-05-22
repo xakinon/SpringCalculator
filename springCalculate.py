@@ -13,6 +13,7 @@ class SpringCalculate(object):
         self.app = app
 
     def uiUpdate(self, count):
+        # uiを更新
         if self.ui is None or self.app is None:
             return
         self.ui.progressBar.setValue(count)
@@ -20,6 +21,7 @@ class SpringCalculate(object):
         self.app.processEvents()
 
     def textSave(self, s, filename):
+        # テキストを追記して保存
         with open(filename, 'a') as f:
             print(s, file=f)
         
@@ -45,6 +47,7 @@ class SpringCalculate(object):
 
                 count = count + 1
 
+                # 2000個計算したらuiの表示を更新
                 if count % 2000 == 0:
                     self.uiUpdate(count)
 
@@ -99,6 +102,8 @@ class Spring(object):
         self.moveRange2 = round( (self.Hf - self.H2) / (self.Hf - self.Hs), 6) # 動作範囲2
         
     def checkCondition(self, Flist):
+        # 計算結果が適正かチェック
+
         # 動作範囲1が20%から80%か
         if self.moveRange1 < 0.2 or self.moveRange1 > 0.8:
             return True
@@ -135,6 +140,7 @@ class Spring(object):
         return f_frag
 
     def toStr(self):
+        # ばねを文字列として返す
         ls = [ self.d, self.Di, self.Na, self.Hf, self.H1, self.H2, self.G, self.kensaku,
                self.D, self.Nt, self.c, self.k, self.P, self.kt, self.t1, self.t2, self.Hs, 
                self.F1, self.F2, self.aspect, self.moveRange1, self.moveRange2, self.Fg]
